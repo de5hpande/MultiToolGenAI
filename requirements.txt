@@ -1,0 +1,10 @@
+cassio
+numpy
+langchain
+streamlit
+python-dotenv
+langchain_community
+langchain_huggingface
+langgraph
+langchain-groq
+langchainhub
