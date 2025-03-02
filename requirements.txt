@@ -9,4 +9,7 @@ langgraph
 langchain-groq
 langchainhub
 chromadb
-astrapy
+langchain-astradb
+tiktoken
+wikipedia
+arxiv

@@ -7,6 +7,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.vectorstores.cassandra import Cassandra
+from langchain_astradb import AstraDBVectorStore
 from langchain.indexes.vectorstore import VectorStoreIndexWrapper
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -26,9 +27,9 @@ print("SERPER_API_KEY:", os.getenv("SERPER_API_KEY"))
 load_dotenv()
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 ASTRA_DB_ID = os.getenv("ASTRA_DB_ID")
+ASTRA_DB_API_ENDPOINT = os.environ["ASTRA_DB_API_ENDPOINT"]
+ASTRA_DB_KEYSPACE = os.environ.get("ASTRA_DB_KEYSPACE")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-cassio.init(token=ASTRA_DB_APPLICATION_TOKEN, database_id=ASTRA_DB_ID)
 
 # Streamlit UI
 st.title("MultiTool AI RAG")
@@ -50,18 +51,19 @@ doc_splits = text_splitter.split_documents(docs_list)
 
 # Embeddings
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-astra_vector_store = Cassandra(
+astra_vector_store = AstraDBVectorStore(
+    collection_name="test",
     embedding=embeddings,
-    table_name="qa_mini_demo",
-    session=None,
-    keyspace=None
+    token=ASTRA_DB_APPLICATION_TOKEN,
+    api_endpoint=ASTRA_DB_API_ENDPOINT,
+    namespace=ASTRA_DB_KEYSPACE,
 )
 astra_vector_store.add_documents(doc_splits)
 st.success(f"Inserted {len(doc_splits)} documents into vector store.")
 
 # Use VectorStoreIndexWrapper
 astra_vector_index = VectorStoreIndexWrapper(vectorstore=astra_vector_store)
-retriever = astra_vector_index.as_retriever()
+retriever = astra_vector_store.as_retriever()
 
 # Routing System
 class RouteQuery(BaseModel):
@@ -101,7 +103,7 @@ def route_question(state):
 workflow = StateGraph(GraphState)
 workflow.add_node("wiki_search", wiki_search)
 workflow.add_node("retrieve", retrieve)
-workflow.add_conditional_edges(START, route_question, {"wiki_search": "wiki_search", "vectorstore": "retrieve"})
+workflow.add_conditional_edges(START, route_question, {"wiki_search": "wiki_search", "retrieve": "retrieve"})
 workflow.add_edge("retrieve", END)
 workflow.add_edge("wiki_search", END)
 app = workflow.compile()
