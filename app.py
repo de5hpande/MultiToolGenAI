@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import cassio
-import openai
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
@@ -18,13 +17,16 @@ from langgraph.graph import END, StateGraph, START
 from typing import List, Literal
 from typing_extensions import TypedDict
 
+print("ASTRA_DB_APPLICATION_TOKEN:", os.getenv("ASTRA_DB_APPLICATION_TOKEN"))
+print("ASTRA_DB_ID:", os.getenv("ASTRA_DB_ID"))
+print("GROQ_API_KEY:", os.getenv("GROQ_API_KEY"))
+print("SERPER_API_KEY:", os.getenv("SERPER_API_KEY"))
 
 # Load environment variables
 load_dotenv()
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 ASTRA_DB_ID = os.getenv("ASTRA_DB_ID")
-groq_api_key = os.getenv("groq_api_key")
-SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 cassio.init(token=ASTRA_DB_APPLICATION_TOKEN, database_id=ASTRA_DB_ID)
 
@@ -57,13 +59,15 @@ astra_vector_store = Cassandra(
 astra_vector_store.add_documents(doc_splits)
 st.success(f"Inserted {len(doc_splits)} documents into vector store.")
 
-retriever = astra_vector_store.as_retriever()
+# Use VectorStoreIndexWrapper
+astra_vector_index = VectorStoreIndexWrapper(vectorstore=astra_vector_store)
+retriever = astra_vector_index.as_retriever()
 
 # Routing System
 class RouteQuery(BaseModel):
     datasource: Literal["vectorstore", "wiki_search"]
 
-llm = ChatGroq(groq_api_key=groq_api_key, model_name="Gemma2-9b-It")
+llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="Gemma2-9b-It")
 structured_llm_router = llm.with_structured_output(RouteQuery)
 
 route_prompt = ChatPromptTemplate.from_messages([
