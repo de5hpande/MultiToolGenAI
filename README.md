@@ -1,7 +1,3 @@
-Here’s a `README.md` file for your project, complete with emojis for a visually appealing look, and detailed information about the project, Astra DB, and Groq:
-
----
-
 # 🚀 MultiTool AI RAG Project
 
 Welcome to the **MultiTool AI RAG Project**! This project leverages cutting-edge technologies like **Astra DB** and **Groq** to build a powerful Retrieval-Augmented Generation (RAG) system. It combines document retrieval, natural language processing, and AI-driven responses to provide intelligent answers to user queries.
